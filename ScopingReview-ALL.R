@@ -141,7 +141,6 @@ df$fu<-round(df$fu,1)
 
 #### Assigning continents the country information column ####
 levels(df$country)
-# table(df$continent)
 
 df$continent<-factor(countrycode(sourcevar = df[, "country"],
                                     origin = "country.name",
