@@ -1,16 +1,16 @@
 
-# rm(list=ls())
+rm(list=ls())
 # set environment
 setwd("/Users/Womps/Documents/U/SkyDrive/Australia Life/PhD year 2/Scoping Review/R-files")
 
 #### Packages for figures ####
-# # install.packages('extrafont')
-# # install.packages("RColorBrewer")
-# # install.packages("tidyverse")
-# # install.packages("viridis")
-# # install.packages("ggplot2")
-# # install.packages('gridExtra')
-# # install.packages('grid')
+# install.packages('extrafont')
+# install.packages('gridExtra')
+# install.packages('grid')
+# install.packages("ggplot2")
+# install.packages("tidyverse")
+# install.packages("viridis")
+# install.packages("RColorBrewer")
 
 library(extrafont)
 library(gridExtra)
@@ -21,11 +21,11 @@ library(viridis)
 library(RColorBrewer)
 
 #### Packages for data analysis ####
-# # install.packages('countrycode')
-# # install.packages('datasets')
-# # install.packages('reshape2')
-# # install.packages("openxlsx", dependencies = TRUE)
-# # install.packages('dplyr')
+# install.packages('countrycode')
+# install.packages('datasets')
+# install.packages('reshape2')
+# install.packages("openxlsx", dependencies = TRUE)
+# install.packages('dplyr')
 
 library(countrycode)
 library(datasets)
@@ -44,10 +44,8 @@ write.csv(b, "test.csv", row.names = F)
 dat=read.csv ("test.csv", h=T)
 # str(dat)
 
-# dat$Author.and.Country
 
-
-#### Study information columns ####
+#### Processing study information columns ####
 
 ### Countries and continents
 foo<-data.frame(do.call('rbind',strsplit(as.character(dat$Author.and.Country), "\\)|\\(")))
@@ -71,7 +69,7 @@ m.f<-dat$Male.Female.ratio
 calc.timepoints<-dat$calculated.timepoints
 fu<-dat$furthest.fu
 
-### Data frame with all information columns #### 
+### Dataframe with all information columns #### 
 df<-data.frame(author, country, year,
                 title,
                intervention,
@@ -83,6 +81,7 @@ df<-data.frame(author, country, year,
                age.disp,
                m.f,
                fu)
+##removing vectors from working environment
 rm(author, country, year, title, sample,descriptives, data.status, meta,stroke.type, age, age.disp,m.f,intervention,fu,foo,b)
 
 
@@ -92,6 +91,9 @@ df$study.id<-paste(paste(df$author, df$year, sep=", "), df$country, df$intervent
 # unique(df$study.id) # activate to make sure the right number of unique studies have been included in table
 df$study.id<-factor(df$study.id,
                   labels=1:length(dat$Year))
+
+
+
 # organizing columns
 df<-df[,c(which(names(df)=='study.id'),
             which(names(df)=='author'),
@@ -352,9 +354,7 @@ tests.raw<-x
 names(tests.raw)
 
 # these lines are for filtered papers
-meta<-tests.raw[which(tests.raw$meta.final=='include'),c('id','author', 'year', 'country', 'intervention','title','instrument','sample','stroke.type','age','age.disp', 'm.f','fu')]
-
-
+# meta<-tests.raw[which(tests.raw$meta.final=='include'),c('id','author', 'year', 'country', 'intervention','title','instrument','sample','stroke.type','age','age.disp', 'm.f','fu')]
 
 # all papers
 # meta<-tests.raw[,c('id','author', 'year', 'country', 'intervention','title','instrument','sample','stroke.type','age','age.disp', 'm.f','fu')]
@@ -377,11 +377,12 @@ meta<-tests.raw[which(tests.raw$meta.final=='include'),c('id','author', 'year', 
 #
 # length(unique(meta$id))-6
 
+# exclude papers that did not meet inclusion for scoping review but did for the meta-analysis
+df[df$data.status=='exclude',"study.id"]=NA
+df=df[!is.na(df$study.id),]
 
 
 ####Cleaning instrument names####
-
-
 
 ####code for manual instrument categories below
 
@@ -2750,87 +2751,6 @@ x=.icf.agreed #organizing data to show in ascending order
 .icf.agreed<-x[order(x$domain),]
    
 
-#####Plot 1: studies #############
-{
-  
-  # source
-  # http://t-redactyl.io/blog/2016/02/creating-plots-in-r-using-ggplot2-part-6-weighted-scatterplots.html
-  ###Bubble Colors (different theme)
-  # fill=c("#7fc97f","#beaed4", "#fdc086", "#ffff99", "#386cb0", "#f0027f", "#bf5b17")
-  
-  df=df[!is.na(df$author),]
-  
-  fill=c(
-         "violetred2",#africa
-         "darkgoldenrod1",#asia
-         "skyblue",#europe
-         "darkcyan",#multinational
-         "navy",#north america
-    "lightgoldenrodyellow",#oceania
-         "olivedrab1"#south america
-         )
-  
-  breaks=c(8,300,3000)
-  # fill1 = c("#fbb4ae",
-  #           "#b3cde3",
-  #           "#ccebc5",
-  #           "snow3",
-  #           "#fed9a6",
-  #           "#ffffcc",
-  #           "#e5d8bd")
-  # fill2=c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69')
-
-  df$continent=factor(df$continent)
-  df$continent.calc<-df$continent
-  levels(df$continent.calc)=paste0(levels(df$continent),' (',round(table(df$continent)*100/length(df$author)),'%)')
-  
-
-  ###Basic Plot without any bubbles at all#
-  p6<-ggplot(df, aes(x = year, y = study, size= sample, fill=continent.calc))
-  # p6
-
-
-
-  ##FULL BUBBLE PLOT##
-
-  p7=p6+
-    theme_bw() +
-    theme() +
-    geom_point(shape=21,alpha=.5)+
-    ggtitle(paste0("Figure 1: Included Studies (N =",length(df$author), ')')) +
-    labs(x = "Publication year", y = "Study (Author, year)",
-         size = "Sample size", fill = "Continent") +
-    scale_x_continuous(breaks = seq(min(df$year)-2, max(df$year)+3, 3),limits = c(min(df$year),max(df$year)+1)) +
-    scale_fill_manual(values = fill) +
-    scale_size(range = c(1, 230), breaks = breaks) +
-    coord_cartesian(ylim=c(-3, length(df$author)+length(df$author)/8))+
-    theme(legend.position = "bottom",
-          legend.direction = "horizontal",
-          legend.box = "horizontal",
-          # legend.key.size = unit(.5, "cm"),
-          legend.key.height = unit(.6,'cm'),
-          legend.key.width = unit(1,'cm'),
-          legend.box.just = 2,
-          # legend.title.align = .5,
-          legend.text=element_text(size=10),
-          axis.line = element_line(size=0.1, colour = "gray40"),
-          panel.grid.major = element_line(colour = "gray90", size = 0.1),
-          panel.grid.minor = element_blank(),
-          panel.border = element_blank(), panel.background = element_blank(),
-          plot.title = element_text(family = "Tahoma", face = "bold",hjust = 0.5, size = length(df$author)/4.5),
-          text=element_text(family="Tahoma"),
-          axis.text.x=element_text(colour="gray25", size = length(df$author)/7),
-          axis.text.y=element_text(colour="gray25", size = length(df$author)/15.5),
-          axis.title.x = element_text(colour="black", size = length(df$author)/5),
-          axis.title.y = element_text(colour="black", size = length(df$author)/5))
-  
-  # font_import(prompt = F)  
-  # loadfonts()
-  # fonts()
-  ggsave(p7,filename = "Figure1-Studies.pdf",dpi='retina',width =length(df$author)/5, height = length(df$author)/5, limitsize = F)
-    rm(p6,p7,breaks,fill)
-  
-  }
 
 
 #####Plot 2: tests and domains (ICF - after agreement)####
@@ -2930,12 +2850,12 @@ p=  ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +       # Note that 
     geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
     geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
   
-  p=grid.arrange(bottom = textGrob("MMSE= Mini-Mental State Examination; TMT= Trail Making Test; FIM = Functional Independence \n Measure; Digit sp = Wechsler's Digit Span; MoCA= Montreal Cognitive Assessment; MDRS= Mattis-Dementia \n Rating Scale; ROCF= Rey-Osterrieth Complex Figure; BIT= Behavioral Inattention Test; Log Mem= Wechsler's \n Logical Memory; RAVLT= Rey Auditory Verbal Learning Test; ADAS-cog= Alzheimer's Disease Assessment \n Scale; AMT= Abbreviated Mental Test; FAB= Frontal Assessment Battery \n \n HLCF= Higher-Level Cognitive Functioning", x = 0.5, y=1.5, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
+  p=grid.arrange(bottom = textGrob("HLCF= Higher-Level Cognitive Functioning \n \n MMSE= Mini-Mental State Examination; TMT= Trail Making Test; FIM = Functional Independence \n Measure; Digit sp = Wechsler's Digit Span; MoCA= Montreal Cognitive Assessment; MDRS= Mattis-Dementia \n Rating Scale; ROCF= Rey-Osterrieth Complex Figure; BIT= Behavioral Inattention Test; Log Mem= Wechsler's \n Logical Memory; RAVLT= Rey Auditory Verbal Learning Test; ADAS-cog= Alzheimer's Disease Assessment \n Scale; AMT= Abbreviated Mental Test; FAB= Frontal Assessment Battery", x = 0.5, y=1.5, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
   
   
   
   ## saving plot
-  ggsave(p, filename = "Figure2-TestsDomains-ICF.pdf", width =9, height = 8, limitsize = F)
+  ggsave(p, filename = "Figure2-TestsDomains-ICF.png", width =9, height = 8, limitsize = F)
   rm(data,base_data,grid_data,label_data,to_add,angle,empty_bar,number_of_bar)
 
     
@@ -3030,7 +2950,7 @@ p=  ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +       # Note that 
     geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
     geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
 
-  p=grid.arrange(bottom = textGrob("MMSE= Mini-Mental State Examination; TMT= Trail Making Test; FIM = Functional Independence \n Measure; Digit sp = Wechsler's Digit Span; MoCA= Montreal Cognitive Assessment; MDRS= Mattis-Dementia \n Rating Scale; ROCF= Rey-Osterrieth Complex Figure; BIT= Behavioral Inattention Test; Log Mem= Wechsler's \n Logical Memory; RAVLT= Rey Auditory Verbal Learning Test; ADAS-cog= Alzheimer's Disease Assessment \n Scale; AMT= Abbreviated Mental Test; FAB= Frontal Assessment Battery \n \n HLCF= Higher-Level Cognitive Functioning", x = 0.5, y=1.5, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
+  p=grid.arrange(bottom = textGrob("HLCF= Higher-Level Cognitive Functioning \n \n MMSE= Mini-Mental State Examination; TMT= Trail Making Test; FIM = Functional Independence \n Measure; Digit sp = Wechsler's Digit Span; MoCA= Montreal Cognitive Assessment; MDRS= Mattis-Dementia \n Rating Scale; ROCF= Rey-Osterrieth Complex Figure; BIT= Behavioral Inattention Test; Log Mem= Wechsler's \n Logical Memory; RAVLT= Rey Auditory Verbal Learning Test; ADAS-cog= Alzheimer's Disease Assessment \n Scale; AMT= Abbreviated Mental Test; FAB= Frontal Assessment Battery", x = 0.5, y=1.5, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
   
   #saving plot
   ggsave(p, filename = "Figure2A-TestsDomains-NO-ICF.png", width =9, height = 8, limitsize = F)
@@ -3131,13 +3051,96 @@ p=ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +       # Note that id
   geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
   geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
 
-p=grid.arrange(bottom = textGrob("MMSE= Mini-Mental State Examination; TMT= Trail Making Test; FIM = Functional Independence \n Measure; Digit sp = Wechsler's Digit Span; MoCA= Montreal Cognitive Assessment; MDRS= Mattis-Dementia \n Rating Scale; ROCF= Rey-Osterrieth Complex Figure; BIT= Behavioral Inattention Test; Log Mem= Wechsler's \n Logical Memory; RAVLT= Rey Auditory Verbal Learning Test; ADAS-cog= Alzheimer's Disease Assessment \n Scale; AMT= Abbreviated Mental Test; FAB= Frontal Assessment Battery \n \n HLCF= Higher-Level Cognitive Functioning", x = 0.5, y=1.5, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
+p=grid.arrange(bottom = textGrob("HLCF= Higher-Level Cognitive Functioning \n \n MMSE= Mini-Mental State Examination; TMT= Trail Making Test; FIM = Functional Independence \n Measure; Digit sp = Wechsler's Digit Span; MoCA= Montreal Cognitive Assessment; MDRS= Mattis-Dementia \n Rating Scale; ROCF= Rey-Osterrieth Complex Figure; BIT= Behavioral Inattention Test; Log Mem= Wechsler's \n Logical Memory; RAVLT= Rey Auditory Verbal Learning Test; ADAS-cog= Alzheimer's Disease Assessment \n Scale; AMT= Abbreviated Mental Test; FAB= Frontal Assessment Battery", x = 0.5, y=1.5, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
 
 #saving plot
 ggsave(p, filename = "Figure2B-TestsDomains-ICF-OneReviewer.png", width =9, height = 8, limitsize = F)
 rm(data,base_data,grid_data,label_data,to_add,angle,empty_bar,number_of_bar)
 
 
+}
+
+#####Plot 3: studies #############
+{
+  
+  # source
+  # http://t-redactyl.io/blog/2016/02/creating-plots-in-r-using-ggplot2-part-6-weighted-scatterplots.html
+  ###Bubble Colors (different theme)
+  # fill=c("#7fc97f","#beaed4", "#fdc086", "#ffff99", "#386cb0", "#f0027f", "#bf5b17")
+  
+  df=df[!is.na(df$author),]
+  
+  fill=c(
+         "violetred2",#africa
+         "darkgoldenrod1",#asia
+         "skyblue",#europe
+         "darkcyan",#multinational
+         "navy",#north america
+    "lightgoldenrodyellow",#oceania
+         "olivedrab1"#south america
+         )
+  
+  breaks=c(8,300,3000)
+  # fill1 = c("#fbb4ae",
+  #           "#b3cde3",
+  #           "#ccebc5",
+  #           "snow3",
+  #           "#fed9a6",
+  #           "#ffffcc",
+  #           "#e5d8bd")
+  # fill2=c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69')
+
+  df$continent=factor(df$continent)
+  df$continent.calc<-df$continent
+  levels(df$continent.calc)=paste0(levels(df$continent),' (',round(table(df$continent)*100/length(df$author)),'%)')
+  
+
+  ###Basic Plot without any bubbles at all#
+  p6<-ggplot(df, aes(x = year, y = study, size= sample, fill=continent.calc))
+  # p6
+
+
+
+  ##FULL BUBBLE PLOT##
+
+  p7=p6+
+    theme_bw() +
+    theme() +
+    geom_point(shape=21,alpha=.5)+
+    ggtitle(paste0("   Figure 3: Sample Size and Origin of Included Studies (N =",length(df$author), ')')) +
+    labs(x = "Publication year", y = "Study (Author, year)",
+         size = "Sample size", fill = "Continent") +
+    scale_x_continuous(breaks = seq(min(df$year)-2, max(df$year)+3, 3),limits = c(min(df$year),max(df$year)+1)) +
+    scale_fill_manual(values = fill) +
+    scale_size(range = c(1, 230), breaks = breaks) +
+    coord_cartesian(ylim=c(-3, length(df$author)+length(df$author)/8))+
+    theme(legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.box = "horizontal",
+          # legend.key.size = unit(.5, "cm"),
+          legend.key.height = unit(.6,'cm'),
+          legend.key.width = unit(1,'cm'),
+          legend.box.just = 2,
+          # legend.title.align = .5,
+          legend.text=element_text(size=10),
+          axis.line = element_line(size=0.1, colour = "gray40"),
+          panel.grid.major = element_line(colour = "gray90", size = 0.1),
+          panel.grid.minor = element_blank(),
+          panel.border = element_blank(), panel.background = element_blank(),
+          plot.title = element_text(family = "Tahoma", face = "bold",hjust = 0.5, size = length(df$author)/4.5),
+          text=element_text(family="Tahoma"),
+          axis.text.x=element_text(colour="gray25", size = length(df$author)/7),
+          axis.text.y=element_text(colour="gray25", size = length(df$author)/15.5),
+          axis.title.x = element_text(colour="black", size = length(df$author)/5),
+          axis.title.y = element_text(colour="black", size = length(df$author)/5))
+  
+  # font_import(prompt = F)  
+  # loadfonts()
+  # fonts()
+  p=grid.arrange(bottom = textGrob("Note: please refer to our supplementary table for more details about each included study", x = .55, y=90, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 35)),p7)
+  ggsave(p,filename = "Figure3-Studies.png",dpi='retina',width =length(df$author)/5, height = length(df$author)/5, limitsize = F)
+    rm(p6,p7,breaks,fill)
+  
 }
 
 # #structuring names with count in parenthesis (ICF - after agreement)
@@ -3209,21 +3212,21 @@ rm(data,base_data,grid_data,label_data,to_add,angle,empty_bar,number_of_bar)
   
 }
 
-#####Plot 3: domains by test (ICF - after agreement)####
+length(unique(x$individual))
+
+#####Plot 4: domains by test (ICF - after agreement)####
 {
-  # install.packages("tidyverse")
-  # library(tidyverse)
-  # install.packages("viridis")
-  # library(viridis)
-  
   # preparing the data
   str(x)
+  x$individual=as.character(x$individual)
+  x[!is.na(x$individual) & x$individual=='other','individual']='Other'
+  x[!is.na(x$individual) & x$individual=='[Not Reported]','individual']='Not reported'
   x$individual<-factor(x$individual)
   x$group<-factor(x$group)
   x$observation<-as.character(x$observation)
   x$id<-as.integer(x$id)
   data<-x
-  names(data)[which(names(data)=='observation')]='intervention'
+  names(data)[which(names(data)=='observation')]='Intervention'
   
   # Get the name and the y position of each label
   label_data= data %>% group_by(id, individual) %>% summarize(tot=sum(value))
@@ -3249,18 +3252,33 @@ rm(data,base_data,grid_data,label_data,to_add,angle,empty_bar,number_of_bar)
   
   
   # Make the plot
+  
   # The following lines separate out the "Other" category and makes it into different colors
-  data[which(with(data,individual=='other'&
-                    intervention=="yes")),'intervention']='yes '
-  data[which(with(data,individual=='other'&
-                    intervention=="no")),'intervention']='no '
+  # data[which(with(data,individual=='other'&
+  #                   intervention=="yes")),'intervention']='yes '
+  # data[which(with(data,individual=='other'&
+  #                   intervention=="no")),'intervention']='no '
+  # 
   
-  cols=c("lightskyblue","midnightblue","palegreen3","seagreen")
+  cols=c("lightskyblue","brown1", ### the next two colors are to highlight the 'Other' category when the lines immediately above are activated
+         "palegreen3","seagreen")
   
-  ggplot(data) +
+  ## creating a dataset with the top 7 instruments
+  .top7names=tests.result[1:7,1] #grabbing the names of the top 7 instrumnets
+  .top7=data.frame(matrix(ncol = length(names(tests.cleaner)))) #empty matrix with the same number of columns as the tests.cleaner dataset
+  names(.top7)=names(tests.cleaner)#assign column names
+  ## populating matrix
+  for (i in seq_along(.top7names)) {
+  .top7=rbind(.top7,tests.cleaner[which(with(tests.cleaner,instrument==.top7names[i])),])
+  
+  }
+  .top7=.top7[-1,]
+  
+  
+  p=ggplot(data) +
     
     # Add the stacked bar
-    geom_bar(aes(x=as.factor(id), y=value, fill=intervention), stat="identity", alpha=0.5) +
+    geom_bar(aes(x=as.factor(id), y=value, fill=Intervention), stat="identity", alpha=0.5) +
     scale_fill_viridis(discrete=TRUE) +
     scale_fill_manual(values = cols) +
     
@@ -3278,7 +3296,7 @@ rm(data,base_data,grid_data,label_data,to_add,angle,empty_bar,number_of_bar)
     ylim(-100,110) +
     theme_minimal() +
     ggtitle(paste0(
-      "Figure 3: Cognitive Domains Evaluated by the Top 7 Instruments \nN =" ,
+      "Figure 4: Cognitive Domains Evaluated by the Top 7 Instruments \nN =" ,
       length(unique(.top7$id)),' studies, ',
       round(sum(tests.result$Freq[1:7])/length(sort(tests.cleaner$instrument)),digits = 2)*100 ,'% of the assessment events recorded \n[ICF domains]' )
       )+
@@ -3299,8 +3317,10 @@ rm(data,base_data,grid_data,label_data,to_add,angle,empty_bar,number_of_bar)
     geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=.7 , inherit.aes = FALSE )  +
     geom_text(data=base_data, aes(x = title, y = -15, label=group), hjust=c(.5,.7,.8,.5,.2,.2,.2), colour = "black", alpha=0.8, size=2.5, fontface="bold", inherit.aes = FALSE)
   
-  ggsave("Figure3-DomainsByTest-ICF.png", width =9, height = 8, limitsize = F)
-  rm(x)
+  p=grid.arrange(bottom = textGrob("Note:  FIM = Functional Independence; HLCF= Higher-Level Cognitive Functioning; ICF-ch1= International Classification of Functioning \n and Disability, chapter 1; MMSE= Mini-Mental State Examination; Measure; DS = Wechsler's Digit Span; MoCA= Montreal Cognitive \n Assessment; TMT= Trail Making Test; VFT= Verbal Fluency Test", x = 0.5, y=3, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
+  
+  ggsave(p,filename = "Figure4-DomainsByTest-ICF.png", width =9, height = 8, limitsize = F)
+  # rm(x)
 }
 
 # #structuring names with count in parenthesis (ICF - one reviewer)
@@ -3372,21 +3392,20 @@ x[which(x$individual==''),'individual']=NA
 
 }
 
-#####Plot 3A: domains by test (ICF - one reviewer)####
+#####Plot 4A: domains by test (ICF - one reviewer)####
 {
-# install.packages("tidyverse")
-# library(tidyverse)
-# install.packages("viridis")
-# library(viridis)
 
 # preparing the data
-str(x)
-x$individual<-factor(x$individual)
+  str(x)
+  x$individual=as.character(x$individual)
+  x[!is.na(x$individual) & x$individual=='other','individual']='Other'
+  x[!is.na(x$individual) & x$individual=='[Not Reported]','individual']='Not reported'
+  x$individual<-factor(x$individual)
 x$group<-factor(x$group)
 x$observation<-as.character(x$observation)
 x$id<-as.integer(x$id)
 data<-x
-names(data)[which(names(data)=='observation')]='intervention'
+names(data)[which(names(data)=='observation')]='Intervention'
 # Get the name and the y position of each label
 label_data= data %>% group_by(id, individual) %>% summarize(tot=sum(value))
 number_of_bar=nrow(label_data)
@@ -3412,30 +3431,22 @@ grid_data=grid_data[-1,]
 
 # Make the plot
 # The following lines separate out the "Other" category and makes it into different colors
-data[which(with(data,individual=='other'&
-                  intervention=="yes")),'intervention']='yes '
-data[which(with(data,individual=='other'&
-                  intervention=="no")),'intervention']='no '
+# data[which(with(data,individual=='other'&
+#                   intervention=="yes")),'intervention']='yes '
+# data[which(with(data,individual=='other'&
+#                   intervention=="no")),'intervention']='no '
 
-cols=c("lightskyblue","midnightblue","palegreen3","seagreen")
+cols=c("lightskyblue","brown1",
+       "palegreen3","seagreen")
 
 
 sum(tests.result$Freq[1:7])
 
-.top7=tests.cleaner[which(with(tests.cleaner,instrument=='MMSE'|
-  instrument=='TMT'|
-  instrument=='Verbal Fluency'|
-  instrument=='FIM'|
-  instrument=='Digit sp'|
-  instrument=='Stroop'|
-  instrument=='MoCA')),]
 
-
-
-ggplot(data) +
+p=ggplot(data) +
 
   # Add the stacked bar
-  geom_bar(aes(x=as.factor(id), y=value, fill=intervention), stat="identity", alpha=0.5) +
+  geom_bar(aes(x=as.factor(id), y=value, fill=Intervention), stat="identity", alpha=0.5) +
   scale_fill_viridis(discrete=TRUE) +
   scale_fill_manual(values = cols) +
 
@@ -3453,7 +3464,7 @@ ggplot(data) +
   ylim(-100,110) +
   theme_minimal() +
   ggtitle( paste0(
-    "Figure 3A: Cognitive Domains Evaluated by the Top 7 Instruments \nN =" ,
+    "Figure 4A: Cognitive Domains Evaluated by the Top 7 Instruments \nN =" ,
     length(unique(.top7$id)),' studies, ',
     round(sum(tests.result$Freq[1:7])/length(sort(tests.cleaner$instrument)),digits = 2)*100 ,'% of the assessment events recorded \n[ICF recoded by one reviewer]' )
     
@@ -3476,7 +3487,10 @@ ggplot(data) +
   geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=.7 , inherit.aes = FALSE )  +
   geom_text(data=base_data, aes(x = title, y = -15, label=group), hjust=c(.5,.7,.8,.5,.2,.2,.2), colour = "black", alpha=0.8, size=2.5, fontface="bold", inherit.aes = FALSE)
 
-ggsave("Figure3A-DomainsByTest-ICF.png", width =9, height = 8, limitsize = F)
+p=grid.arrange(bottom = textGrob("Note:  FIM = Functional Independence; HLCF= Higher-Level Cognitive Functioning; ICF-ch1= International Classification of Functioning \n and Disability, chapter 1; MMSE= Mini-Mental State Examination; Measure; DS = Wechsler's Digit Span; MoCA= Montreal Cognitive \n Assessment; TMT= Trail Making Test; VFT= Verbal Fluency Test", x = 0.5, y=3, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
+
+
+ggsave(p, filename = "Figure4A-DomainsByTest-ICF.png", width =9, height = 8, limitsize = F)
 rm(x)
 }
 
@@ -3549,22 +3563,21 @@ rm(x)
     
   
 }
-#####Plot 3B: domains by test (NO ICF)####
+#####Plot 4B: domains by test (NO ICF)####
 {
-# install.packages("tidyverse")
-# library(tidyverse)
-# install.packages("viridis")
-# library(viridis)
+
 
 # preparing the data
 
 str(x)
+x$individual=as.character(x$individual)
+x[!is.na(x$individual) & x$individual=='other','individual']='Other'
+x[!is.na(x$individual) & x$individual=='[Not Reported]','individual']='Not reported'
 x$individual<-factor(x$individual)
-x$group<-factor(x$group)
 x$observation<-as.character(x$observation)
 x$id<-as.integer(x$id)
 data<-x
-names(data)[which(names(data)=='observation')]='intervention'
+names(data)[which(names(data)=='observation')]='Intervention'
 
 # Get the name and the y position of each label
 label_data= data %>% group_by(id, individual) %>% summarize(tot=sum(value))
@@ -3591,17 +3604,18 @@ grid_data=grid_data[-1,]
 
 # Make the plot
 # The following lines separate out the "Other" category and makes it into different colors
-data[which(with(data,individual=='other'&
-                  intervention=="yes")),'intervention']='yes '
-data[which(with(data,individual=='other'&
-                  intervention=="no")),'intervention']='no '
+# data[which(with(data,individual=='other'&
+#                   intervention=="yes")),'intervention']='yes '
+# data[which(with(data,individual=='other'&
+#                   intervention=="no")),'intervention']='no '
 
-cols=c("lightskyblue","midnightblue","palegreen3","seagreen")
+cols=c("lightskyblue","brown1",
+       "palegreen3","seagreen")
 
-ggplot(data) +
+p=ggplot(data) +
 
   # Add the stacked bar
-  geom_bar(aes(x=as.factor(id), y=value, fill=intervention), stat="identity", alpha=0.5) +
+  geom_bar(aes(x=as.factor(id), y=value, fill=Intervention), stat="identity", alpha=0.5) +
   scale_fill_viridis(discrete=TRUE) +
   scale_fill_manual(values = cols) +
 
@@ -3619,7 +3633,7 @@ ggplot(data) +
   ylim(-100,110) +
   theme_minimal() +
   ggtitle(paste0(
-    "Figure 3B: Cognitive Domains Evaluated by the Top 7 Instruments \nN =" ,
+    "Figure 4B: Cognitive Domains Evaluated by the Top 7 Instruments \nN =" ,
     length(unique(.top7$id)),' studies, ',
     round(sum(tests.result$Freq[1:7])/length(sort(tests.cleaner$instrument)),digits = 2)*100 ,'% of the assessment events recorded \n[raw domains]' ))+
   theme(
@@ -3639,72 +3653,12 @@ ggplot(data) +
   geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=.7 , inherit.aes = FALSE )  +
   geom_text(data=base_data, aes(x = title, y = -15, label=group), hjust=c(.5,.7,.8,.5,.3,.2,.2), colour = "black", alpha=0.8, size=2.5, fontface="bold", inherit.aes = FALSE)
 
-ggsave("Figure3B-DomainsByTest-NO-ICF.png", width =9, height = 8, limitsize = F)
-rm(data,base_data,grid_data,label_data,to_add,angle,breaks,empty_bar,fill,id,n.obs,number_of_bar,seq.max,x)
-
-}
-
-####plot 4: studies reporting data####
-{
-  fill=c(
-    "violetred2",#africa
-    "darkgoldenrod1",#asia
-    "skyblue",#europe
-    # "darkcyan",#multinational
-    "navy",#north america
-    "lightgoldenrodyellow",#oceania
-    "olivedrab1"#south america
-  )
-breaks=c(8,300,3000)
-
-descrip.yes<-df[which(df$descriptives=='yes'),]
-descrip.yes$continent=factor(descrip.yes$continent)
-descrip.yes$continent.calc<-descrip.yes$continent
-levels(descrip.yes$continent.calc)=paste0(levels(descrip.yes$continent),' (',round(table(descrip.yes$continent)*100/length(descrip.yes$author)),'%)')
+p=grid.arrange(bottom = textGrob("Note:  FIM = Functional Independence; HLCF= Higher-Level Cognitive Functioning; ICF-ch1= International Classification of Functioning \n and Disability, chapter 1; MMSE= Mini-Mental State Examination; Measure; DS = Wechsler's Digit Span; MoCA= Montreal Cognitive \n Assessment; TMT= Trail Making Test; VFT= Verbal Fluency Test", x = 0.5, y=3, hjust= .5, gp =  gpar (fontface = 3L, fontsize = 6)),p)
 
 
+ggsave(p, filename = "Figure4B-DomainsByTest-NO-ICF.png", width =9, height = 8, limitsize = F)
+# rm(data,base_data,grid_data,label_data,to_add,angle,breaks,empty_bar,fill,id,n.obs,number_of_bar,seq.max,x)
 
-###Basic Plot without bubbles#
-p6<-ggplot(descrip.yes, aes(x = year, y = study, size= sample, fill=continent.calc))
-
-
-
-##FULL BUBBLE PLOT##
-
-p7=p6+
-  theme_bw() +
-  theme() +
-  geom_point(shape=21,alpha=.5)+
-  ggtitle(paste0("Figure 4: Included Studies Reporting Cognitive Outcomes (N =",length(descrip.yes$author), ')')) +
-  labs(x = "Publication year", y = "Study (Author, year)",
-       size = "Sample size", fill = "Continent") +
-  scale_x_continuous(breaks = seq(1999, 2020, 3),limits = c(2001,2018)) +
-  scale_fill_manual(values = fill) +
-  scale_size(range = c(1, 230), breaks = breaks) +
-  coord_cartesian(ylim=c(-1, 110))+
-  theme(legend.position = "bottom",
-        legend.direction = "horizontal",
-        legend.box = "horizontal",
-        # legend.key.size = unit(.5, "cm"),
-        legend.key.height = unit(.6,'cm'),
-        legend.key.width = unit(1,'cm'),
-        legend.box.just = 2,
-        # legend.title.align = .5,
-        legend.text=element_text(size=10),
-        axis.line = element_line(size=0.2, colour = "black"),
-        panel.grid.major = element_line(colour = "#d3d3d3", size = 0.2),
-        panel.grid.minor = element_blank(),
-        panel.border = element_blank(), panel.background = element_blank(),
-        plot.title = element_text(family = "Tahoma", face = "bold",hjust = 0.5, size = 45),
-        text=element_text(family="Tahoma"),
-        axis.text.x=element_text(colour="black", size = 30),
-        axis.text.y=element_text(colour="black", size = 22),
-        axis.title.x = element_text(colour="black", size = 40),
-        axis.title.y = element_text(colour="black", size = 40))
-# p7
-
-ggsave("Figure4-StudiesWithOutcomes.png", width =40, height = 40, limitsize = F,dpi = 'retina')
-rm(p6,p7,breaks,fill,descrip.yes)
 }
 
 #####FINAL PLOT - MOST TESTS AND DOMAINS#####
@@ -3820,13 +3774,8 @@ rm(p6,p7,breaks,fill,descrip.yes)
   x[which(x$individual==''),'individual']=NA
 }
 
-#####FINAL PLOT: domains by test (ICF)####
+#####FINAL PLOT 5: domains by test (ICF)####
 {
-  # install.packages("tidyverse")
-  # library(tidyverse)
-  # install.packages("viridis")
-  # library(viridis)
-  
   # preparing the data
   
   
@@ -3842,6 +3791,9 @@ rm(p6,p7,breaks,fill,descrip.yes)
   x=x[order(x$id),]
   
   
+  x$individual=as.character(x$individual)
+  x[!is.na(x$individual) & x$individual=='other','individual']='Other'
+  x[!is.na(x$individual) & x$individual=='[Not Reported]','individual']='Not reported'
   x$individual<-factor(x$individual)
   x$group<-factor(x$group)
   x$observation<-as.character(x$observation)
@@ -3851,7 +3803,7 @@ rm(p6,p7,breaks,fill,descrip.yes)
   data=x
   
   
-  names(data)[which(names(data)=='observation')]='intervention'
+  names(data)[which(names(data)=='observation')]='Intervention'
   
   # Get the name and the y position of each label
   label_data= data %>% group_by(id, individual) %>% summarize(tot=sum(value))
@@ -3879,12 +3831,12 @@ rm(p6,p7,breaks,fill,descrip.yes)
   
   # Make the plot
   # The following lines separate out the "Other" category and makes it into different colors
-  data[which(with(data,individual=='other'&
-                    intervention=="yes")),'intervention']='yes '
-  data[which(with(data,individual=='other'&
-                    intervention=="no")),'intervention']='no '
+  # data[which(with(data,individual=='other'&
+  #                   intervention=="yes")),'intervention']='yes '
+  # data[which(with(data,individual=='other'&
+  #                   intervention=="no")),'intervention']='no '
   
-  cols=c("lightskyblue","midnightblue","palegreen3","seagreen")
+  cols=c("lightskyblue","brown1","palegreen3","seagreen")
   
   half.1=trunc(length(base_data$group)/2)-1
   half.2=round(length(base_data$group)/2)-2
@@ -3892,7 +3844,7 @@ rm(p6,p7,breaks,fill,descrip.yes)
 p= ggplot(data) +
 
     # Add the stacked bar
-    geom_bar(aes(x=as.factor(id), y=value, fill=intervention), stat="identity", alpha=0.5) +
+    geom_bar(aes(x=as.factor(id), y=value, fill=Intervention), stat="identity", alpha=0.5) +
     scale_fill_viridis(discrete=TRUE) +
     scale_fill_manual(values = cols) +
       # Add a value lines. I do it at the beginning to make sure barplots are OVER it.
@@ -3934,47 +3886,146 @@ round((length(.icf.plot$instrument)/length(sort(tests.cleaner$instrument))),digi
  
  p=grid.arrange(bottom = 'tmt= trail making test; token= token test; vft= verbal fluency test; vrt= visual reproduction test; wcst= wisconsin card sort test; wll= word list learning; wlr= word list recall & recognition; adas= alzheimers disease assessment scale; amt= abbreviated mental test;\n avlt= auditory verbal learning test; bdt= block design test; bit= behavioral inattention test; camcog= cambridge cognition examination; = cbtcorsi blocks test; cdt= clock drawing test; cowat= controlled oral word association test; dr= delayed recall test;\n ds= digit span test; dsym= digit symbol test; fab= frontal assessment battery; fct= figure copying test; fim= functional independence measure; gpt= grooved peg test; iq-code= informant questionnaire on cognitive decline in the elderly; lct= letter cancellation\n test; lm= logical memory test; mdrs= mattis-dementia rating scale; mmse= mini mental examination; moca= montreal cognitive assessment; nam= naming test; ravlt= rey auditory verbal learning test; rbans= repeatable battery for the assessment of neuropsychological\n status; rocf= rey-osterrieth complex figure test; sdmt= symbol digit modalities test; sim= similarities test; sis= stroke impact scale; sr= story recal test; stroop= stroop test (cwit)',p)
   
-  ggsave(p,filename="Figure5-DomainsByTest-ICF.pdf", width =20, height = 18, limitsize = F, dpi = 'retina')
+  ggsave(p,filename="Figure5-DomainsByTest-ICF.png", width =20, height = 18, limitsize = F, dpi = 'retina')
   
+}
+
+####plot 6: studies reporting data####
+{
+  fill=c(
+    "violetred2",#africa
+    "darkgoldenrod1",#asia
+    "skyblue",#europe
+    # "darkcyan",#multinational
+    "navy",#north america
+    "lightgoldenrodyellow",#oceania
+    "olivedrab1"#south america
+  )
+breaks=c(8,300,3000)
+
+descrip.yes<-df[which(df$descriptives=='yes'),]
+descrip.yes$continent=factor(descrip.yes$continent)
+descrip.yes$continent.calc<-descrip.yes$continent
+levels(descrip.yes$continent.calc)=paste0(levels(descrip.yes$continent),' (',round(table(descrip.yes$continent)*100/length(descrip.yes$author)),'%)')
+
+
+
+###Basic Plot without bubbles#
+p6<-ggplot(descrip.yes, aes(x = year, y = study, size= sample, fill=continent.calc))
+
+
+
+##FULL BUBBLE PLOT##
+
+p7=p6+
+  theme_bw() +
+  theme() +
+  geom_point(shape=21,alpha=.5)+
+  ggtitle(paste0("Figure 6: Included Studies Reporting Cognitive Outcomes (N =",length(descrip.yes$author), ')')) +
+  labs(x = "Publication year", y = "Study (Author, year)",
+       size = "Sample size", fill = "Continent") +
+  scale_x_continuous(breaks = seq(1999, 2020, 3),limits = c(2001,2018)) +
+  scale_fill_manual(values = fill) +
+  scale_size(range = c(1, 230), breaks = breaks) +
+  coord_cartesian(ylim=c(-1, 110))+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "horizontal",
+        # legend.key.size = unit(.5, "cm"),
+        legend.key.height = unit(.6,'cm'),
+        legend.key.width = unit(1,'cm'),
+        legend.box.just = 2,
+        # legend.title.align = .5,
+        legend.text=element_text(size=10),
+        axis.line = element_line(size=0.2, colour = "black"),
+        panel.grid.major = element_line(colour = "#d3d3d3", size = 0.2),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        plot.title = element_text(family = "Tahoma", face = "bold",hjust = 0.5, size = 45),
+        text=element_text(family="Tahoma"),
+        axis.text.x=element_text(colour="black", size = 30),
+        axis.text.y=element_text(colour="black", size = 22),
+        axis.title.x = element_text(colour="black", size = 40),
+        axis.title.y = element_text(colour="black", size = 40))
+# p7
+
+ggsave("Figure6-StudiesWithOutcomes.png", width =40, height = 40, limitsize = F,dpi = 'retina')
+rm(p6,p7,breaks,fill,descrip.yes)
 }
 
 
 
+
 ####Final calculations####
+###ABSTRACT###
+#included studies
+length(df$author)
+#intervention studies
+table(df$intervention)
+round(table(df$intervention)[1]/length(df$author),digits=2)
+#participants 150 or less
+round(table(df$sample<=150)[2]/length(df$author),digits=2)
+#more than one assessment
+round(length(which(table(tests.cleaner$id)>=2))/length(df$author), digits =2)
 #descriptive data reported
 table(df$descriptives)
 levels(df$descriptives)=c('no','no','yes')
+round(table(df$descriptives)[2]/length(df$author),digits = 2) # percentage
+table(df$intervention, df$descriptives)
+#instrument count
+length(tests.result$Var1)
+#domain count
+length(domains.result$Var1)
+#most frequent instruments
+tests.result[1:7,]
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='MMSE'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='TMT'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='Verbal Fluency'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='FIM'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='Digit sp'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='Stroop'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='MoCA'),'id']))*100/length(df$author)
+#longest follow-up within the first 12 months post stroke
+table(df$fu<=12)*100/length(df$author)
 
+
+###Results section####
 #type of study
-table(df$intervention,df$descriptives)*100/length(df$author)
+round(table(df$intervention)[1]/length(df$study.id), digits = 2)
 
-#studies with less than 150 participants
-table(df$sample<150,df$descriptives)
-rowSums(table(df$sample>=25 & df$sample<50,df$descriptives))
-table(df$sample>=50 & df$sample<100,df$descriptives)
-table(df$sample>=100 & df$sample<150,df$descriptives)
-table(df$sample>=150 & df$sample<500,df$descriptives)
-table(df$sample>=500 & df$sample<1500,df$descriptives)
-table(df$sample>=1500 & df$sample<4000,df$descriptives)
+round(table(df$intervention,df$descriptives)*100/length(df$author))
+
+#studies by intervetion or not reporting cognitive outcomes
+table(df$sample<25,df$descriptives)[2,]
+table(df$sample>=25 & df$sample<50,df$descriptives)[2,]
+table(df$sample>=50 & df$sample<100,df$descriptives)[2,]
+table(df$sample>=100 & df$sample<150,df$descriptives)[2,]
+table(df$sample>=150 & df$sample<500,df$descriptives)[2,]
+table(df$sample>=500 & df$sample<1500,df$descriptives)[2,]
+table(df$sample>=1500 & df$sample<4000,df$descriptives)[2,]
 table(df$sample>=4000,df$descriptives)
-# *100/length(df$author)
+
 
 # studies with less than 1 year FU
 table(df$fu<=12)*100/length(df$author)
-table(df$fu<=1,df$descriptives)
-table(df$fu>1 & df$fu<=3,df$descriptives)
-table(df$fu>3 & df$fu<=6,df$descriptives)
-table(df$fu>6 & df$fu<=12,df$descriptives)
-table(df$fu>12 & df$fu<=24,df$descriptives)
-table(df$fu>24 & df$fu<=36,df$descriptives)
-table(df$fu>36 & df$fu<=60,df$descriptives)
-table(df$fu>60,df$descriptives)
+table(df$fu<=1,df$descriptives)[2,]
+table(df$fu>1 & df$fu<=3,df$descriptives)[2,]
+table(df$fu>3 & df$fu<=6,df$descriptives)[2,]
+table(df$fu>6 & df$fu<=12,df$descriptives)[2,]
+table(df$fu>12 & df$fu<=24,df$descriptives)[2,]
+table(df$fu>24 & df$fu<=36,df$descriptives)[2,]
+table(df$fu>36 & df$fu<=60,df$descriptives)[2,]
+table(df$fu>60,df$descriptives)[2,]
 
-# Counting instruments
+# Counting instruments (results in percentage)
 #Only one instrument used
 length(which(table(tests.cleaner$id)==1))*100/length(df$author)
 #Two or more instrument used
 length(which(table(tests.cleaner$id)>=2))*100/length(df$author)
+#study IDs with more than one assessment
+tests.cleaner[which(table(tests.cleaner$id)>1),c('id')]
+
+
 #screening tests
 screening.tests<-tests.cleaner[which(with(tests.cleaner, instrument=="MMSE"|
                                             instrument=='FIM'|
@@ -3988,42 +4039,60 @@ screening.tests<-tests.cleaner[which(with(tests.cleaner, instrument=="MMSE"|
                                             instrument=='GDS'|
                                             instrument=='MDRS'|
                                             instrument=='IQ-CODE')),]
-length(tests.cleaner[which(with(tests.cleaner, 
+
+
+### percentage of studies using cognitive screenings
+screening.tests=screening.tests[order(screening.tests$id),]
+length(unique(screening.tests[,c('id')]))*100/length(df$author)
+length(screening.tests$author)/length(tests.cleaner$author)
+
+### studies using top 7 instruments
+length(unique(tests.cleaner[which(with(tests.cleaner, 
                          instrument=="MMSE"|
                            instrument=='TMT'|
-                           instrument=='Verbal Fluency Test'|
+                           instrument=='Verbal Fluency'|
                            instrument=='FIM'|
-                           instrument=='Digit Span'|
+                           instrument=='Digit sp'|
                            instrument=='Stroop'|
-                           instrument=='MoCA')),'id'])*100/length(tests.cleaner$instrument)
-
+                           instrument=='MoCA')),'id']))
+### percentage of studies using top 7 instruments
 length(unique(sort(tests.cleaner[which(with(tests.cleaner, 
                         instrument=="MMSE"|
                         instrument=='TMT'|
-                        instrument=='Verbal Fluency Test'|
+                        instrument=='Verbal Fluency'|
                         instrument=='FIM'|
-                        instrument=='Digit Span'|
+                        instrument=='Digit sp'|
                         instrument=='Stroop'|
                         instrument=='MoCA')),'id'])))*100/length(df$author)
 
-length(unique(screening.tests$id))*100/length(df$author)
+### percentage of times top 7 instruments were used 
+length(tests.cleaner[which(with(tests.cleaner, 
+                                       instrument=="MMSE"|
+                                         instrument=='TMT'|
+                                         instrument=='Verbal Fluency'|
+                                         instrument=='FIM'|
+                                         instrument=='Digit sp'|
+                                         instrument=='Stroop'|
+                                         instrument=='MoCA')),'id'])/length(tests.cleaner$author)
+
+
+
+### percentage use for top 7 instruments
 length(unique(tests.cleaner[which(tests.cleaner$instrument=='MMSE'),'id']))*100/length(df$author)
 length(unique(tests.cleaner[which(tests.cleaner$instrument=='TMT'),'id']))*100/length(df$author)
-length(unique(tests.cleaner[which(tests.cleaner$instrument=='Verbal Fluency Test'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='Verbal Fluency'),'id']))*100/length(df$author)
 length(unique(tests.cleaner[which(tests.cleaner$instrument=='FIM'),'id']))*100/length(df$author)
-length(unique(tests.cleaner[which(tests.cleaner$instrument=='Digit Span'),'id']))*100/length(df$author)
+length(unique(tests.cleaner[which(tests.cleaner$instrument=='Digit sp'),'id']))*100/length(df$author)
 length(unique(tests.cleaner[which(tests.cleaner$instrument=='Stroop'),'id']))*100/length(df$author)
 length(unique(tests.cleaner[which(tests.cleaner$instrument=='MoCA'),'id']))*100/length(df$author)
 
-sum(tests.result$Freq)
-sum(tests.result$Freq[1:7])
 
 
 #Counting domains
-length(table(domains.raw$domain))
-length(table(domains.clean$domain))
-length(table(domains.clean.icf$domain))
-length(unique(.icf.agreed$domain))
+length(table(domains.raw$domain))## raw domains
+length(table(domains.clean$domain)) ## semantic categories
+length(table(domains.clean.icf$domain)) ## ICF domains
+table(domains.clean.icf[grep('\\(',domains.clean.icf$domain,invert = T),'domain'])
 
 length(unique(domains.clean[which(domains.clean$domain=='General Cognition'),'id']))*100/length(df$author)
 length(unique(domains.clean[which(domains.clean$domain=='Memory'),'id']))*100/length(df$author)
@@ -4065,8 +4134,10 @@ length(unique(tests.cleaner[which(with(tests.cleaner,instrument=='MMSE'|
                                         instrument=='Stroop'|
                                         instrument=='MoCA')),'id']))
 
-#Percent agreement Formula = 1 - (disagreements / total)
- 
+# observed agreement = 1 - (disagreements / total)
+# sorting by count before calculating agreement
+
+dom.inst.icf=dom.inst.icf[order(dom.inst.icf$Freq, decreasing = T),]
 
 round(1-(sum(dom.inst.icf[which(with(dom.inst.icf,Var1=='MMSE')),c('Var2','Freq')][2])-
   dom.inst.icf[which(with(dom.inst.icf,Var1=='MMSE')),c('Var2','Freq')][1,2])/
@@ -4101,7 +4172,7 @@ round(1-(sum(dom.inst.icf[which(with(dom.inst.icf,Var1=='MoCA')),c('Var2','Freq'
 as.table(sort(round(table(df$data.status)*100/length(df$author),1)))
 
 # saving in separate table
-data.reported<-as.table(sort(table(df$data.status)))
+data.reported<-as.table(sort(table(df$data.status)))[2:6]
 
 # is there the difference significant
 chisq.test(data.reported[1:2])[1:10]
@@ -4140,113 +4211,5 @@ unique(tests.cleaner[which(with(tests.cleaner,instrument=='MoCA' &
 
 #####table with recoding of domains (extracted directly from code - supplementary table)
 
-
 ###final table with everything (extracted from final excel - supplementary table)
 
-
-
-###Backup code below###
-{####backup code for instrument categories
-# c$instrument[44:55]="Block Design Test"
-# c$instrument[73:87]="Boston Nanimg Test"
-# c$instrument[163:168]="COWAT"
-# c$instrument[199:230]="Digit Span"
-# c$instrument[284:329]="Verbal Fluency Test"
-# c$instrument[401:409]="Logical Memory"
-# c$instrument[430:432]="Mental Control"
-# c$instrument[566:571]="Naming"
-# c$instrument[666:673]="Similarities"
-# c$instrument[689]="Spontaneous Speech Fluency"
-# c$instrument[700:722]="Stroop"
-# c$instrument[748:795]="TMT"
-# c$instrument[796:806]="Token Test"
-# c$instrument[829:839]="Visual Reproduction"
-# c$instrument[845:852]="WCST"
-# c$instrument[c(861,862,870)]="WLM"
-# c$instrument[c(863:865,871,872)]="WLR"
-# c$instrument[858:860]="WLL"
-# c$instrument[875]="Writing"
-
-
-# more backup code for instruments
-# a$instrument[c(2,4,32:37)]="Fluency Test [animals]"
-# a$instrument[12:13]="BNT [15-item version]"
-# a$instrument[16]="BNT [60-item version]"
-# a$instrument[6:10]="10-Word List Learning"
-# a$instrument[14:15]="5-Word Repetition"
-# a$instrument[23:24]="Auditory Detection"
-# a$instrument[39]="ADAS-Cog [aphasia Scale]"
-# a$instrument[551]="ADAS-Cog [orientation]"
-# a$instrument[40:42]="Arithmetic"
-# a$instrument[100:102]="Calculation Test"
-# a$instrument[113:114]="Fluency Test [categories]"
-# a$instrument[c(112,115,118,120)]="Fluency Test [animals]"
-# a$instrument[c(116,117,119)]="Fluency Test [categories]"
-# a$instrument[122:126]="Corsi Blocks Test"
-# a$instrument[c(131:139,148:150)]="Clock Drawing Test"
-# a$instrument[153]="CNS-Vital Signs Test"
-# a$instrument[163]="MMSE [Construction Item]"
-# a$instrument[400]="MMSE [Three-Word Memory Item]"
-# a$instrument[552]="MMSE [Orientation Items]"
-# a$instrument[669]="MMSE [Spatial Orientation Item]"
-# a$instrument[76]="BIT [Conventional Subtest]"
-# a$instrument[173]="BIT [Copying Task]"
-# a$instrument[572]="BIT [Picture Scanning]"
-# a$instrument[679:680]="BIT [Star Cancellation]"
-# a$instrument[168]="Copy a Cube"
-# a$instrument[182]="Clock Perception"
-# a$instrument[194]="DASS"
-# a$instrument[c(193,194,206:207)]="DR"
-# a$instrument[220:227]="DS"
-# a$instrument[231:234]="DSB"
-# a$instrument[c(235:238,243,244)]="DSB & DSF"
-# a$instrument[239:242]="DSF"
-# a$instrument[308:310]="Go-No-Go Test"
-# a$instrument[311:314]="GPT"
-# a$instrument[326:327]="I-Flex"
-# a$instrument[337:340]="IQ-CODE"
-# a$instrument[345:347]="JLO"
-# a$instrument[c(355:358,361,362)]="Letter Cancellation"
-# a$instrument[c(3,5,363:366,370)]="Fluency Test [Letters]"
-# a$instrument[c(374:375,377:378,380,382)]="LM"
-# a$instrument[c(376,381)]="LM-II"
-# a$instrument[379]="LM-I"
-# a$instrument[503:510]="MMSE"
-# a$instrument[530]="BVRT [modified Version]"
-# a$instrument[549]="TMT A"
-# a$instrument[559:566]="Fluency Test [phonemic]"
-# a$instrument[648]="Fluency Test [semantic]"
-# a$instrument[c(798:803,808:812,867,868)]="Fluency Test [verbal]"
-# a$instrument[568:569]="Picture Completion"
-# a$instrument[580]="CAMCOG"
-# a$instrument[582:583]="RAPM"
-# a$instrument[c(842,851,852)]="Weigl Color Sorting Test"
-
-
-# ###backup code with number positions (not reliable if original table is changed)
-# x$domain[23]="Attention [alternating]"
-# x$domain[65]="Attention"
-# x$domain[227]="Attention [divided]"
-# x$domain[296]="Attention [focused visual attention]"
-# x$domain[313]="Attention [general visual attention]"
-# x$domain[486]="Attention [phasic]"
-# x$domain[523]="Attention [selective]"
-# x$domain[553:554]="Attention [sustained]"
-# x$domain[555]="Attention [switching]"
-# x$domain[560]="Attention [tonic]"
-# x$domain[594:595]="Attention [visual inattention]"
-# x$domain[288:292]="EF"
-
-# SEARCH FUNCTION
-  # search=function(words){
-  #   match=c(words)
-  #   dput(paste0("x=='",unique(x[grep(paste(
-  #     match,
-  #     sep = '|'), x$domain),'domain']),"'", collapse="|"))
-  # }
-  #
-
-}
-
-
-View(.icf.agreed)
